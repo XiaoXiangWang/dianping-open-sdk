@@ -8,8 +8,10 @@
 
 #import "DPViewController.h"
 #import "DPAppDelegate.h"
+#import "QDDianPingAPIDefines.h"
+#import "QDDianPingAPI.h"
 
-@interface DPViewController () <UIActionSheetDelegate, DPRequestDelegate>
+@interface DPViewController () <UIActionSheetDelegate>
 
 @end
 
@@ -45,8 +47,8 @@
 {
     [super viewDidLoad];
     // Do any additional setup after loading the view from its nib.
-	self.keyInput.text = [[DPAppDelegate instance] appKey];
-	self.secretInput.text = [[DPAppDelegate instance] appSecret];
+	self.keyInput.text = QDDianPingAPIAppKey;
+	self.secretInput.text = QDDianPingAPIAppSecret;
 	[self.urlButton setTitle:[urlArray objectAtIndex:index] forState:UIControlStateNormal];
 	self.paramInput.text = [paramsArray objectAtIndex:index];
 }
@@ -97,22 +99,16 @@
 		return;
 	}
 	
-	[[DPAppDelegate instance] setAppKey:self.keyInput.text];
-	[[DPAppDelegate instance] setAppSecret:self.secretInput.text];
-	
-	NSString *url = [urlArray objectAtIndex:index];
+    __weak typeof(self) weakSelf = self;
+    NSString *url = [QDDianPingAPIHostAbsoluteString stringByAppendingString:[urlArray objectAtIndex:index]];
 	NSString *params = [paramsArray objectAtIndex:index];
-	[[[DPAppDelegate instance] dpapi] requestWithURL:url paramsString:params delegate:self];
-}
-
-- (void)request:(DPRequest *)request didFailWithError:(NSError *)error {
-	self.resultTextView.contentOffset = CGPointZero;
-	self.resultTextView.text = [error description];
-}
-
-- (void)request:(DPRequest *)request didFinishLoadingWithResult:(id)result {
-	self.resultTextView.contentOffset = CGPointZero;
-	self.resultTextView.text = [result description];
+    [QDDianPingAPI QDDianPingRequestWithURL:url
+                                queryString:params
+                            completionBlock:^(NSHTTPURLResponse *response, id data, BOOL flag) {
+                                weakSelf.resultTextView.text = [data performSelector:@selector(description) withObject:nil];
+                            } failureBlock:^(NSError *error) {
+                                weakSelf.resultTextView.text = error.description;
+                            }];
 }
 
 @end
